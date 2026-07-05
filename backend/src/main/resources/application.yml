@@ -1,0 +1,21 @@
+spring:
+  profiles:
+    active: local
+  jpa:
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
+app:
+  jwt:
+    # 256-bit secure hex key for signing HS256 tokens
+    secret: 9a4f2c8d3b7a1e5f8g2h6j0k4m8n3p7q1r5s9t2u6v0w4x8y2z6a0b4c8d2e6f0
+    access-expiration-ms: 900000 # 15 minutes
+    refresh-expiration-ms: 604800000 # 7 days
