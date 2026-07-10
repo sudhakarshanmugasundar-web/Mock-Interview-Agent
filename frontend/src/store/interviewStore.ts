@@ -37,6 +37,8 @@ interface InterviewState {
   submitAnswer: (sessionId: number, answerText: string, mode?: string, time?: number, audioPath?: string) => Promise<FeedbackResponse>;
   fetchFeedback: (sessionId: number) => Promise<void>;
   fetchResult: (sessionId: number) => Promise<void>;
+  saveSelfIntroductionDraft: (sessionId: number, answerText: string) => Promise<void>;
+  submitSelfIntroduction: (sessionId: number, answerText: string) => Promise<void>;
   clearActiveSession: () => void;
 }
 
@@ -260,4 +262,30 @@ export const useInterviewStore = create<InterviewState>((set, get) => ({
   },
 
   clearActiveSession: () => set({ activeSession: null, currentQuestion: null, feedback: [], result: null }),
+
+  saveSelfIntroductionDraft: async (sessionId, answerText) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await axiosClient.put<InterviewSessionResponse>(`/interviews/${sessionId}/self-introduction/draft`, answerText, {
+        headers: { 'Content-Type': 'text/plain' }
+      });
+      set({ activeSession: response.data, isLoading: false });
+    } catch (err: any) {
+      set({ isLoading: false, error: err.response?.data?.message || err.message });
+      throw err;
+    }
+  },
+
+  submitSelfIntroduction: async (sessionId, answerText) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await axiosClient.post<InterviewSessionResponse>(`/interviews/${sessionId}/self-introduction/submit`, answerText, {
+        headers: { 'Content-Type': 'text/plain' }
+      });
+      set({ activeSession: response.data, isLoading: false });
+    } catch (err: any) {
+      set({ isLoading: false, error: err.response?.data?.message || err.message });
+      throw err;
+    }
+  },
 }));

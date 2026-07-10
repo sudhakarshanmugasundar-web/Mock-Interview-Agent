@@ -25,7 +25,6 @@ import { useTheme } from '../context/ThemeContext';
 import { useAuthStore } from '../store/authStore';
 import { useToast } from '../components/Toast';
 import { useInterviewStore } from '../store/interviewStore';
-import { ThemeToggle } from './ThemeToggle';
 
 export const SidebarLayout: React.FC = () => {
   const { darkMode } = useTheme();
@@ -61,7 +60,7 @@ export const SidebarLayout: React.FC = () => {
   const menuItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Resume Analyzer', path: '/resume-analyzer', icon: FileSearch },
-    { name: 'Mock Interviews', path: '/mock-interviews', icon: GraduationCap },
+    { name: 'Mock Interview', path: '/mock-interviews', icon: GraduationCap },
     { name: 'Interview History', path: '/interview-history', icon: History },
     { name: 'AI Feedback', path: '/ai-feedback', icon: Sparkles },
     { name: 'Reports', path: '/reports', icon: FileText },
@@ -159,13 +158,6 @@ export const SidebarLayout: React.FC = () => {
                 <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 truncate">{profile.email}</p>
               </div>
             </div>
-            <ThemeToggle />
-          </div>
-        )}
-
-        {isCollapsed && (
-          <div className="flex justify-center mb-1">
-            <ThemeToggle />
           </div>
         )}
 

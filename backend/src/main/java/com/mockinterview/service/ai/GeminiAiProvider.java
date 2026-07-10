@@ -273,4 +273,72 @@ public class GeminiAiProvider implements AiProvider {
             throw new RuntimeException("AI provider error: " + e.getMessage(), e);
         }
     }
+
+    @Override
+    public SelfIntroductionEvaluationResult evaluateSelfIntroduction(String introductionText, String resumeSummary) {
+        if (apiKey == null || apiKey.trim().isEmpty()) {
+            throw new IllegalStateException("Gemini API key is not configured");
+        }
+
+        String prompt = "You are an expert recruiter and communication coach. Evaluate the candidate's self-introduction.\n\n" +
+                "Candidate's Self-Introduction:\n" + introductionText + "\n\n" +
+                "Candidate's Resume/Profile Summary:\n" + (resumeSummary != null ? resumeSummary : "None") + "\n\n" +
+                "Please score the introduction on the following criteria (each from 0 to 100):\n" +
+                "1. communicationScore - Clarity, pacing, logic, and structure.\n" +
+                "2. grammarScore - Grammar correctness, professional vocabulary, and sentence construction.\n" +
+                "3. professionalismScore - Professionalism of tone, confidence, and choice of words.\n" +
+                "4. resumeRelevanceScore - How relevant the introduction is to the provided resume summary. If no resume summary is provided, base it on standard expectations (e.g. 70).\n" +
+                "5. overallScore - Overall effectiveness and impact of the self-introduction.\n\n" +
+                "Also provide structured feedback:\n" +
+                "- strengths: What the candidate did well (up to 5 bullet points, e.g. \"• Bullet 1\\n• Bullet 2\").\n" +
+                "- weaknesses: Gaps or areas of hesitation (up to 5 bullet points).\n" +
+                "- missingInformation: Crucial details missing from the self-introduction (e.g. missing skills, missing objective).\n" +
+                "- suggestions: Concrete tips to improve.\n" +
+                "- improvedText: A polished and refined version of their self-introduction, preserving their original background information.\n\n" +
+                "Respond ONLY with a valid JSON object. No markdown block formatting, no extra text:\n" +
+                "{\n" +
+                "  \"communicationScore\": 85,\n" +
+                "  \"grammarScore\": 90,\n" +
+                "  \"professionalismScore\": 88,\n" +
+                "  \"resumeRelevanceScore\": 80,\n" +
+                "  \"overallScore\": 86,\n" +
+                "  \"strengths\": \"• Good professional tone\\n• Structured introduction\",\n" +
+                "  \"weaknesses\": \"• Lacked specific metrics\",\n" +
+                "  \"missingInformation\": \"Mention of key technologies like Spring Boot\",\n" +
+                "  \"suggestions\": \"Incorporate metrics and keep it concise\",\n" +
+                "  \"improvedText\": \"Polished version of the introduction\"\n" +
+                "}";
+
+        String responseText = callGemini(prompt);
+
+        try {
+            String cleanedJson = responseText.trim();
+            if (cleanedJson.startsWith("```json")) {
+                cleanedJson = cleanedJson.substring(7);
+            }
+            if (cleanedJson.startsWith("```")) {
+                cleanedJson = cleanedJson.substring(3);
+            }
+            if (cleanedJson.endsWith("```")) {
+                cleanedJson = cleanedJson.substring(0, cleanedJson.length() - 3);
+            }
+            cleanedJson = cleanedJson.trim();
+
+            return objectMapper.readValue(cleanedJson, SelfIntroductionEvaluationResult.class);
+        } catch (Exception e) {
+            log.error("Failed to parse self introduction evaluation JSON from Gemini: {}. Raw response: {}", e.getMessage(), responseText);
+            return SelfIntroductionEvaluationResult.builder()
+                    .communicationScore(75)
+                    .grammarScore(80)
+                    .professionalismScore(78)
+                    .resumeRelevanceScore(70)
+                    .overallScore(76)
+                    .strengths("• Delivered basic background details.")
+                    .weaknesses("• Formatting issue or parsing failure on LLM response.")
+                    .missingInformation("Unable to parse detailed missing information.")
+                    .suggestions("Try to restructure the introduction and verify key facts.")
+                    .improvedText(introductionText)
+                    .build();
+        }
+    }
 }

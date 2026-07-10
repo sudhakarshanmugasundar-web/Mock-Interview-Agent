@@ -705,4 +705,58 @@ public class MockAiProvider implements AiProvider {
                   .replace("\r", "\\r")
                   .replace("\t", "\\t");
     }
+
+    @Override
+    public SelfIntroductionEvaluationResult evaluateSelfIntroduction(String introductionText, String resumeSummary) {
+        if (introductionText == null) {
+            introductionText = "";
+        }
+        int wordCount = introductionText.trim().isEmpty() ? 0 : introductionText.trim().split("\\s+").length;
+
+        int communication = 85;
+        int grammar = 90;
+        int professionalism = 88;
+        int relevance = 80;
+
+        if (wordCount < 100) {
+            communication -= 10;
+        } else if (wordCount > 300) {
+            communication -= 5;
+        }
+
+        if (resumeSummary == null || resumeSummary.isEmpty()) {
+            relevance = 50;
+        } else {
+            String lowerIntro = introductionText.toLowerCase();
+            String[] skills = {"java", "spring", "react", "sql", "aws", "docker", "kubernetes", "python", "javascript", "typescript"};
+            int matches = 0;
+            for (String skill : skills) {
+                if (lowerIntro.contains(skill) && resumeSummary.toLowerCase().contains(skill)) {
+                    matches++;
+                }
+            }
+            relevance = 60 + Math.min(matches * 8, 40);
+        }
+
+        int overall = (communication + grammar + professionalism + relevance) / 4;
+
+        String strengths = "• Clear and professional tone.\n• Good logical flow in explaining your background.\n• Highlights key experience effectively.";
+        String weaknesses = "• Could include more measurable metrics/achievements.\n• Minor phrasing improvements could increase fluency.";
+        String missing = "• Measurable business outcomes of previous projects.\n• Explicit mention of your career objectives in this role.";
+        String suggestions = "• Add specific metrics (e.g. 'improved performance by 20%').\n• Practice smooth transitions between academic history and work experience.";
+        String improved = "Hello, I am a professional software engineer with a strong background in developing scalable applications. In my previous roles, I successfully designed APIs and worked with cloud technologies, improving efficiency by 25%. I am excited to apply my skills to help solve your technical challenges.";
+
+        return SelfIntroductionEvaluationResult.builder()
+                .communicationScore(communication)
+                .grammarScore(grammar)
+                .professionalismScore(professionalism)
+                .resumeRelevanceScore(relevance)
+                .overallScore(overall)
+                .strengths(strengths)
+                .weaknesses(weaknesses)
+                .missingInformation(missing)
+                .suggestions(suggestions)
+                .improvedText(improved)
+                .build();
+    }
 }

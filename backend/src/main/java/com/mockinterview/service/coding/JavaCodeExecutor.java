@@ -62,36 +62,70 @@ public class JavaCodeExecutor {
 
             // ── Compile ──────────────────────────────────────────────────────
             JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-            if (compiler == null) {
-                return new ExecutionResult("", "Java compiler (javac) is not available on this JVM. Use a JDK, not a JRE.", true, 0);
-            }
+            boolean compileSuccess = false;
+            String errors = "";
 
-            StringWriter compileOut = new StringWriter();
-            File[] sourceFiles = sources.stream()
-                .map(s -> dir.resolve(s.filename()).toFile())
-                .toArray(File[]::new);
+            if (compiler != null) {
+                StringWriter compileOut = new StringWriter();
+                File[] sourceFiles = sources.stream()
+                    .map(s -> dir.resolve(s.filename()).toFile())
+                    .toArray(File[]::new);
 
-            boolean compileSuccess;
-            try (StandardJavaFileManager fm = compiler.getStandardFileManager(null, null, null)) {
-                Iterable<? extends JavaFileObject> units = fm.getJavaFileObjects(sourceFiles);
-                JavaCompiler.CompilationTask task = compiler.getTask(compileOut, fm, null, null, null, units);
+                try (StandardJavaFileManager fm = compiler.getStandardFileManager(null, null, null)) {
+                    Iterable<? extends JavaFileObject> units = fm.getJavaFileObjects(sourceFiles);
+                    JavaCompiler.CompilationTask task = compiler.getTask(compileOut, fm, null, null, null, units);
 
-                ExecutorService compileExec = Executors.newSingleThreadExecutor();
-                Future<Boolean> compileFuture = compileExec.submit(task::call);
+                    ExecutorService compileExec = Executors.newSingleThreadExecutor();
+                    Future<Boolean> compileFuture = compileExec.submit(task::call);
+                    try {
+                        compileSuccess = compileFuture.get(COMPILE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+                    } catch (TimeoutException e) {
+                        compileFuture.cancel(true);
+                        return new ExecutionResult("", "Compilation timed out (>" + COMPILE_TIMEOUT_SECONDS + "s)", true, 0);
+                    } catch (Exception e) {
+                        compileSuccess = false;
+                        compileOut.write("\nCompiler execution error: " + e.getMessage());
+                    } finally {
+                        compileExec.shutdownNow();
+                    }
+                } catch (IOException e) {
+                    compileSuccess = false;
+                    errors = "File manager error: " + e.getMessage();
+                }
+                if (!compileSuccess) {
+                    errors = compileOut.toString().replace(dir.toString() + File.separator, "").trim();
+                }
+            } else {
+                // Fallback to command-line javac compilation
                 try {
-                    compileSuccess = compileFuture.get(COMPILE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-                } catch (TimeoutException e) {
-                    compileFuture.cancel(true);
-                    return new ExecutionResult("", "Compilation timed out (>" + COMPILE_TIMEOUT_SECONDS + "s)", true, 0);
-                } finally {
-                    compileExec.shutdownNow();
+                    String[] compileCmd = new String[sources.size() + 3];
+                    compileCmd[0] = "javac";
+                    compileCmd[1] = "-d";
+                    compileCmd[2] = dir.toString();
+                    for (int i = 0; i < sources.size(); i++) {
+                        compileCmd[i + 3] = dir.resolve(sources.get(i).filename()).toString();
+                    }
+                    ProcessBuilder compilePb = new ProcessBuilder(compileCmd);
+                    compilePb.directory(dir.toFile());
+                    Process compileProc = compilePb.start();
+
+                    StringBuilder errSb = new StringBuilder();
+                    try (BufferedReader r = new BufferedReader(new InputStreamReader(compileProc.getErrorStream()))) {
+                        String l;
+                        while ((l = r.readLine()) != null) errSb.append(l).append("\n");
+                    }
+                    compileSuccess = compileProc.waitFor(COMPILE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                                     && compileProc.exitValue() == 0;
+                    if (!compileSuccess) {
+                        errors = errSb.toString().replace(dir.toString() + File.separator, "").trim();
+                    }
+                } catch (Exception e) {
+                    return new ExecutionResult("", "Java compiler (javac) is not available on this JVM and command-line fallback failed: " + e.getMessage(), true, 0);
                 }
             }
 
             if (!compileSuccess) {
-                String errors = compileOut.toString()
-                    .replace(dir.toString() + File.separator, ""); // strip temp path
-                return new ExecutionResult("", errors.trim(), true, 0);
+                return new ExecutionResult("", errors, true, 0);
             }
 
             // ── Run ──────────────────────────────────────────────────────────

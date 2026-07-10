@@ -7,7 +7,6 @@ import {
   Play,
   ArrowRight,
   Loader2,
-  AlertCircle,
   TrendingUp,
   TrendingDown,
   Star,
@@ -32,6 +31,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useAuthStore } from '../store/authStore';
 import { useToast } from '../components/Toast';
 import { useInterviewStore } from '../store/interviewStore';
+import { axiosClient } from '../api/axiosClient';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -183,7 +183,7 @@ export const DashboardPage: React.FC = () => {
   // Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newTitle, setNewTitle] = useState('');
-  const [newType, setNewType] = useState('CODING');
+  const newType = 'CODING';
   const [newDifficulty, setNewDifficulty] = useState('MEDIUM');
   const [isStarting, setIsStarting] = useState(false);
 
@@ -191,12 +191,8 @@ export const DashboardPage: React.FC = () => {
   const fetchDetailed = useCallback(async () => {
     setHistLoading(true);
     try {
-      const token = localStorage.getItem('authToken');
-      const res = await fetch('/api/interviews/history/detailed?page=0&size=50', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
-      setDetailedHistory(data.sessions || []);
+      const res = await axiosClient.get('/interviews/history/detailed?page=0&size=50');
+      setDetailedHistory(res.data.sessions || []);
     } catch {
       // silently ignore — fall back to empty
     } finally {
@@ -305,7 +301,7 @@ export const DashboardPage: React.FC = () => {
       localStorage.setItem('active_interview_stage', '0');
       showToast('Interview session started!', 'success');
       setIsModalOpen(false);
-      navigate('/interview');
+      navigate('/system-check');
     } catch (err: any) {
       showToast(err.message || 'Failed to start session.', 'error');
     } finally {
@@ -353,45 +349,52 @@ export const DashboardPage: React.FC = () => {
                 : 'Start your first interview session to get personalised AI insights.'}
             </p>
           </motion.div>
-          <div className="flex items-center gap-3">
-            <button onClick={() => fetchDetailed()}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold
-                border border-white/10 text-slate-400 hover:bg-white/5 cursor-pointer transition-colors">
-              <RefreshCw className="w-3.5 h-3.5" /> Refresh
-            </button>
-            <button onClick={() => setIsModalOpen(true)}
-              className="flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm text-white
-                bg-gradient-to-r from-brand-purple to-brand-indigo hover:brightness-110
-                shadow-lg shadow-brand-purple/20 cursor-pointer transition-all">
-              <Plus className="w-5 h-5" /> New Interview
-            </button>
+          <div className="flex flex-col items-end gap-2">
+            <div className="flex items-center gap-3">
+              <button onClick={() => fetchDetailed()}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold
+                  border border-white/10 text-slate-400 hover:bg-white/5 cursor-pointer transition-colors">
+                <RefreshCw className="w-3.5 h-3.5" /> Refresh
+              </button>
+              {activeSession && (activeSession.status === 'IN_PROGRESS' || activeSession.status === 'PAUSED' || activeSession.status === 'NOT_STARTED') ? (
+                <div className="flex items-center gap-3">
+                  <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-lg border
+                    ${activeSession.status === 'IN_PROGRESS'
+                      ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'
+                      : activeSession.status === 'PAUSED'
+                      ? 'bg-amber-500/10 border-amber-500/20 text-amber-500'
+                      : 'bg-blue-500/10 border-blue-500/20 text-blue-500'
+                    }`}
+                  >
+                    {activeSession.status === 'IN_PROGRESS' ? 'In Progress' : activeSession.status === 'PAUSED' ? 'Paused' : 'Setup'}
+                  </span>
+                  <button onClick={() => {
+                    if (activeSession.status === 'NOT_STARTED') {
+                      navigate('/self-introduction');
+                    } else {
+                      navigate('/interview');
+                    }
+                  }}
+                    className="flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm text-white
+                      bg-gradient-to-r from-brand-purple to-brand-indigo hover:brightness-110
+                      shadow-lg shadow-brand-purple/20 cursor-pointer transition-all">
+                    <Play className="w-4 h-4 fill-current" /> Resume Interview
+                  </button>
+                </div>
+              ) : (
+                <button onClick={() => setIsModalOpen(true)}
+                  className="flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm text-white
+                    bg-gradient-to-r from-brand-purple to-brand-indigo hover:brightness-110
+                    shadow-lg shadow-brand-purple/20 cursor-pointer transition-all">
+                  <Plus className="w-5 h-5" /> Start Interview
+                </button>
+              )}
+            </div>
+            <p className="text-[10px] text-slate-400 font-bold max-w-xs text-right leading-tight">
+              This interview simulates a real company interview containing HR, Technical, and Coding rounds in one continuous session.
+            </p>
           </div>
         </div>
-
-        {/* ── Active session banner ───────────────────────────────────────── */}
-        {activeSession && (
-          <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}
-            className="p-5 rounded-2xl border border-brand-purple/20 bg-brand-purple/5
-              flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div className="flex gap-3">
-              <div className="w-10 h-10 rounded-xl bg-brand-purple/15 text-brand-purple
-                flex items-center justify-center flex-shrink-0">
-                <AlertCircle className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="font-bold text-sm">Ongoing Session Detected</h4>
-                <p className="text-xs text-slate-400 font-semibold mt-0.5">
-                  "{activeSession.title}" — {activeSession.status}. Resume to continue scoring.
-                </p>
-              </div>
-            </div>
-            <button onClick={() => navigate('/interview')}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs text-white
-                bg-brand-purple hover:brightness-110 cursor-pointer transition-all flex-shrink-0">
-              Resume Round <ArrowRight className="w-4 h-4" />
-            </button>
-          </motion.div>
-        )}
 
         {/* ── KPI Strip ──────────────────────────────────────────────────── */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
@@ -439,6 +442,59 @@ export const DashboardPage: React.FC = () => {
             );
           })}
         </div>
+
+        {/* ── Prominent Resume Card ────────────────────────────────────────── */}
+        {activeSession && (activeSession.status === 'IN_PROGRESS' || activeSession.status === 'PAUSED' || activeSession.status === 'NOT_STARTED') && (() => {
+          const savedStage = localStorage.getItem('active_interview_stage');
+          const stageNum = savedStage ? Number(savedStage) : 0;
+          const roundLabels = ['Resume Verification', 'HR Round', 'Technical Round', 'Coding Round', 'Final Evaluation', 'Report'];
+          const activeRoundName = activeSession.status === 'NOT_STARTED' ? 'Setup (Self Introduction)' : (roundLabels[stageNum] || 'HR Round');
+
+          return (
+            <motion.div
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-6 rounded-3xl border border-amber-200 bg-amber-50/20 shadow-xl shadow-amber-500/5 mb-6 flex flex-col md:flex-row items-center justify-between gap-5"
+            >
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600 flex-shrink-0">
+                  <History className="w-6 h-6 animate-pulse" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-black uppercase text-amber-700 bg-amber-500/10 border border-amber-500/25 px-2.5 py-1 rounded-lg">
+                    Unfinished Interview Session
+                  </span>
+                  <h3 className="font-display font-black text-lg text-slate-800 mt-2.5 leading-tight">
+                    {activeSession.title}
+                  </h3>
+                  <p className="text-xs text-slate-650 font-semibold mt-1">
+                    Active Stage: <span className="text-brand-purple font-bold">{activeRoundName}</span>
+                  </p>
+                  <p className="text-xs text-slate-500 font-semibold mt-0.5">
+                    {activeSession.status === 'NOT_STARTED'
+                      ? 'Begin by verifying your resume details and submitting your self-introduction.'
+                      : activeSession.status === 'PAUSED'
+                      ? 'The session is paused. Resume to continue taking your company interview.'
+                      : 'You have a session in progress. Re-join to complete the active rounds.'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  if (activeSession.status === 'NOT_STARTED') {
+                    navigate('/self-introduction');
+                  } else {
+                    navigate('/interview');
+                  }
+                }}
+                className="w-full md:w-auto px-8 py-3.5 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-amber-500 to-amber-600 hover:brightness-110 shadow-lg shadow-amber-500/20 cursor-pointer transition-all flex items-center justify-center gap-2"
+              >
+                <Play className="w-4 h-4 fill-current" />
+                <span>Resume Interview</span>
+              </button>
+            </motion.div>
+          );
+        })()}
 
         {/* ── Main Grid ──────────────────────────────────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -877,23 +933,10 @@ export const DashboardPage: React.FC = () => {
                       }`}
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4">
                   <div>
                     <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-400 mb-2">
-                      Type
-                    </label>
-                    <select value={newType} onChange={e => setNewType(e.target.value)}
-                      className={`w-full px-4 py-3 rounded-xl border font-semibold text-sm
-                        focus:outline-none focus:ring-2 focus:ring-brand-purple/35 cursor-pointer
-                        ${darkMode ? 'bg-white/5 border-white/8 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'}`}>
-                      <option value="HR">HR</option>
-                      <option value="TECHNICAL">Technical</option>
-                      <option value="CODING">Coding</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-400 mb-2">
-                      Difficulty
+                      Difficulty Level
                     </label>
                     <select value={newDifficulty} onChange={e => setNewDifficulty(e.target.value)}
                       className={`w-full px-4 py-3 rounded-xl border font-semibold text-sm

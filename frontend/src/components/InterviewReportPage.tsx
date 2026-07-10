@@ -24,7 +24,7 @@ import {
   Brain
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useTheme } from '../context/ThemeContext';
+import { axiosClient } from '../api/axiosClient';
 import type { InterviewReportResponse } from '../types/interview';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -46,7 +46,7 @@ const ScoreRing: React.FC<{
       <div className="relative" style={{ width: size, height: size }}>
         <svg width={size} height={size} className="-rotate-90">
           <circle cx={size / 2} cy={size / 2} r={r} fill="transparent"
-            stroke="rgba(255,255,255,0.06)" strokeWidth={strokeWidth} />
+            stroke="rgba(0,0,0,0.06)" strokeWidth={strokeWidth} />
           <motion.circle
             cx={size / 2} cy={size / 2} r={r} fill="transparent"
             stroke={color} strokeWidth={strokeWidth}
@@ -86,7 +86,7 @@ const ScoreBar: React.FC<{
         <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">{label}</span>
         <span className="text-sm font-black" style={{ color: textColor }}>{value}/{max}</span>
       </div>
-      <div className="h-2 rounded-full bg-white/5 overflow-hidden">
+      <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${pct}%` }}
@@ -119,7 +119,7 @@ interface Props {
 }
 
 export const InterviewReportPage: React.FC<Props> = ({ sessionId, onDone }) => {
-  const { darkMode } = useTheme();
+  const darkMode = false; // Force light mode in Interview Report Panel
   const reportRef = useRef<HTMLDivElement>(null);
   const [report, setReport] = useState<InterviewReportResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -129,17 +129,10 @@ export const InterviewReportPage: React.FC<Props> = ({ sessionId, onDone }) => {
 
   // ── Fetch report from backend ───────────────────────────────────────────
   useEffect(() => {
-    const token = localStorage.getItem('authToken');
     setLoading(true);
-    fetch(`/api/interviews/${sessionId}/report`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(r => {
-        if (!r.ok) throw new Error(`Status ${r.status}`);
-        return r.json();
-      })
-      .then((data: InterviewReportResponse) => setReport(data))
-      .catch(e => setError('Failed to load report: ' + e.message))
+    axiosClient.get<InterviewReportResponse>(`/interviews/${sessionId}/report`)
+      .then(res => setReport(res.data))
+      .catch(e => setError('Failed to load report: ' + (e.response?.data?.message || e.message)))
       .finally(() => setLoading(false));
   }, [sessionId]);
 

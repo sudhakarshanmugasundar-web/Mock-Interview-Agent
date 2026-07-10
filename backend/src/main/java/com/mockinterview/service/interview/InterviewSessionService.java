@@ -227,6 +227,24 @@ public class InterviewSessionService {
         return new InterviewStatisticsResponse(total, completed, cancelled, inProgress, avgDurationVal);
     }
 
+    @Transactional
+    public InterviewSessionResponse saveSelfIntroductionDraft(String email, Long sessionId, String draftText) {
+        InterviewSession session = getSessionAndVerifyOwnership(email, sessionId);
+        session.setSelfIntroductionDraft(draftText);
+        InterviewSession saved = sessionRepository.save(session);
+        return mapToResponse(saved);
+    }
+
+    @Transactional
+    public InterviewSessionResponse submitSelfIntroduction(String email, Long sessionId, String introText) {
+        InterviewSession session = getSessionAndVerifyOwnership(email, sessionId);
+        session.setSelfIntroduction(introText);
+        // Clear draft since it is submitted
+        session.setSelfIntroductionDraft(null);
+        InterviewSession saved = sessionRepository.save(session);
+        return mapToResponse(saved);
+    }
+
     private InterviewSession getSessionAndVerifyOwnership(String email, Long sessionId) {
         InterviewSession session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Interview session not found with ID: " + sessionId));
@@ -250,7 +268,9 @@ public class InterviewSessionService {
                 session.getEndedAt(),
                 session.getDuration(),
                 session.getCreatedAt(),
-                session.getUpdatedAt()
+                session.getUpdatedAt(),
+                session.getSelfIntroduction(),
+                session.getSelfIntroductionDraft()
         );
     }
 }

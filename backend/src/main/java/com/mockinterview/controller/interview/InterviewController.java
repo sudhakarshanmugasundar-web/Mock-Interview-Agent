@@ -113,6 +113,24 @@ public class InterviewController {
         return ResponseEntity.ok(response);
     }
 
+    @PutMapping("/{sessionId}/self-introduction/draft")
+    public ResponseEntity<InterviewSessionResponse> saveSelfIntroductionDraft(
+            @PathVariable("sessionId") Long sessionId,
+            @RequestBody String answerText,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        InterviewSessionResponse response = sessionService.saveSelfIntroductionDraft(userDetails.getUsername(), sessionId, answerText);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{sessionId}/self-introduction/submit")
+    public ResponseEntity<InterviewSessionResponse> submitSelfIntroduction(
+            @PathVariable("sessionId") Long sessionId,
+            @RequestBody String answerText,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        InterviewSessionResponse response = sessionService.submitSelfIntroduction(userDetails.getUsername(), sessionId, answerText);
+        return ResponseEntity.ok(response);
+    }
+
     @PostMapping("/{sessionId}/answer")
     public ResponseEntity<FeedbackResponse> submitAnswer(@PathVariable("sessionId") Long sessionId,
                                                          @Valid @RequestBody AnswerRequest request,

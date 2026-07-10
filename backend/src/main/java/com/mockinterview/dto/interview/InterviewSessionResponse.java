@@ -13,5 +13,8 @@ public record InterviewSessionResponse(
     LocalDateTime endedAt,
     Integer duration,
     LocalDateTime createdAt,
-    LocalDateTime updatedAt
+    LocalDateTime updatedAt,
+    String selfIntroduction,
+    String selfIntroductionDraft
 ) {}
+

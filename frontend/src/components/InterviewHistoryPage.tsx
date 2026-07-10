@@ -30,6 +30,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../context/ThemeContext';
 import { useToast } from '../components/Toast';
 import { useInterviewStore } from '../store/interviewStore';
+import { axiosClient } from '../api/axiosClient';
 import { InterviewReportPage } from './InterviewReportPage';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -203,17 +204,13 @@ export const InterviewHistoryPage: React.FC = () => {
   const fetchHistory = useCallback(async (p = 0) => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('authToken');
-      const res = await fetch(
-        `/api/interviews/history/detailed?page=${p}&size=${PAGE_SIZE}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+      const res = await axiosClient.get<DetailedHistoryResponse>(
+        `/interviews/history/detailed?page=${p}&size=${PAGE_SIZE}`
       );
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data: DetailedHistoryResponse = await res.json();
-      setSessions(data.sessions);
-      setPage(data.currentPage);
-      setTotalPages(data.totalPages);
-      setTotalItems(data.totalItems);
+      setSessions(res.data.sessions);
+      setPage(res.data.currentPage);
+      setTotalPages(res.data.totalPages);
+      setTotalItems(res.data.totalItems);
     } catch (err: any) {
       showToast('Failed to load interview history.', 'error');
     } finally {

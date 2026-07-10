@@ -37,6 +37,12 @@ public class InterviewSession {
     @Column(name = "end_time")
     private LocalDateTime endedAt;
 
+    @Column(name = "self_introduction", columnDefinition = "TEXT")
+    private String selfIntroduction;
+
+    @Column(name = "self_introduction_draft", columnDefinition = "TEXT")
+    private String selfIntroductionDraft;
+
     @Transient
     private Integer duration = 0; // Cumulative duration in seconds
 
@@ -150,6 +156,22 @@ public class InterviewSession {
                 this.endedAt = this.startedAt.plusSeconds(duration);
             }
         }
+    }
+
+    public String getSelfIntroduction() {
+        return selfIntroduction;
+    }
+
+    public void setSelfIntroduction(String selfIntroduction) {
+        this.selfIntroduction = selfIntroduction;
+    }
+
+    public String getSelfIntroductionDraft() {
+        return selfIntroductionDraft;
+    }
+
+    public void setSelfIntroductionDraft(String selfIntroductionDraft) {
+        this.selfIntroductionDraft = selfIntroductionDraft;
     }
 
     public LocalDateTime getCreatedAt() {

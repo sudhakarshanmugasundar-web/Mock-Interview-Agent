@@ -9,10 +9,13 @@ import { DashboardPage } from './pages/DashboardPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { InterviewPage } from './pages/InterviewPage';
 import { ResultPage } from './pages/ResultPage';
+import { SelfIntroductionPage } from './pages/SelfIntroductionPage';
+import { SystemCheckPage } from './pages/SystemCheckPage';
 import { SidebarLayout } from './components/SidebarLayout';
 import { ComingSoonPage } from './pages/ComingSoonPage';
 import { ResumeAnalyzerPage } from './pages/ResumeAnalyzerPage';
 import { HistoryPage } from './pages/HistoryPage';
+import { MockInterviewPage } from './pages/MockInterviewPage';
 import { useAuthStore } from './store/authStore';
 
 function App() {
@@ -35,7 +38,7 @@ function App() {
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/resume-analyzer" element={<ResumeAnalyzerPage />} />
-              <Route path="/mock-interviews" element={<DashboardPage />} />
+              <Route path="/mock-interviews" element={<MockInterviewPage />} />
               <Route path="/hr-interview" element={<Navigate to="/mock-interviews" replace />} />
               <Route path="/technical-interview" element={<Navigate to="/mock-interviews" replace />} />
               <Route path="/coding-interview" element={<Navigate to="/mock-interviews" replace />} />
@@ -48,6 +51,8 @@ function App() {
               <Route path="/settings" element={<ComingSoonPage title="Settings" />} />
             </Route>
             
+            <Route path="/system-check" element={<SystemCheckPage />} />
+            <Route path="/self-introduction" element={<SelfIntroductionPage />} />
             <Route path="/interview" element={<InterviewPage />} />
             <Route path="/result/:sessionId" element={<ResultPage />} />
             

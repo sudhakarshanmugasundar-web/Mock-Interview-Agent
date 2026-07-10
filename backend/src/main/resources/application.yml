@@ -1,6 +1,11 @@
 spring:
   profiles:
-    active: local
+    active: ${SPRING_PROFILES_ACTIVE:local}
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:mock_interview_agent}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:Sudhakar@2428}
+    driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     open-in-view: false
     properties:
@@ -13,9 +18,12 @@ spring:
     enabled: true
     baseline-on-migrate: true
 
+server:
+  port: ${SERVER_PORT:8080}
+
 app:
   jwt:
     # 256-bit secure hex key for signing HS256 tokens
-    secret: 9a4f2c8d3b7a1e5f8g2h6j0k4m8n3p7q1r5s9t2u6v0w4x8y2z6a0b4c8d2e6f0
-    access-expiration-ms: 900000 # 15 minutes
-    refresh-expiration-ms: 604800000 # 7 days
+    secret: ${JWT_SECRET:9a4f2c8d3b7a1e5f8g2h6j0k4m8n3p7q1r5s9t2u6v0w4x8y2z6a0b4c8d2e6f0}
+    access-expiration-ms: ${JWT_ACCESS_EXPIRATION_MS:900000}
+    refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}

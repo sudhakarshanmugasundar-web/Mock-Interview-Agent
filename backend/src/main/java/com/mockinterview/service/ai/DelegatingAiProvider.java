@@ -42,4 +42,9 @@ public class DelegatingAiProvider implements AiProvider {
     public String analyzeContent(String content, String prompt) {
         return getActiveProvider().analyzeContent(content, prompt);
     }
+
+    @Override
+    public SelfIntroductionEvaluationResult evaluateSelfIntroduction(String introductionText, String resumeSummary) {
+        return getActiveProvider().evaluateSelfIntroduction(introductionText, resumeSummary);
+    }
 }

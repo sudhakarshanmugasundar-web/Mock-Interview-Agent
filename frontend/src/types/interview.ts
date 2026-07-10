@@ -16,6 +16,8 @@ export interface InterviewSessionResponse {
   duration: number;
   createdAt: string;
   updatedAt: string;
+  selfIntroduction?: string;
+  selfIntroductionDraft?: string;
 }
 
 export interface InterviewStatisticsResponse {
